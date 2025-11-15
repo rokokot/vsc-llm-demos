@@ -1,0 +1,23 @@
+#!/bin/bash
+
+ACCOUNT=${1:-lp_augment}
+
+echo "requesting interactive partition..."
+srun --account=${ACCOUNT} \
+   --cluster=wice \
+   --partition=interactive \
+   --gpus-per-node=1 \
+   --cpus-per-task=4 \
+   --mem=16G \
+   --time=4:00:00 \
+   --pty bash -c "
+export VSC_LLM_ROOT=\${VSC_SCRATCH}/vsc-llm
+mkdir -p /tmp/ollama_models
+apptainer run --nv \
+--bind /tmp/ollama_models:/models \
+--env OLLAMA_MODELS=/models \
+\${VSC_LLM_ROOT}/containers/ollama.sif &
+sleep 3
+echo '=== Ollama server running ==='
+echo 'run: vsc-llm-chat'
+bash

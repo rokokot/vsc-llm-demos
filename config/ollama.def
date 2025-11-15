@@ -1,0 +1,21 @@
+Bootstrap: docker
+From: ollama/ollama:latest
+
+%post
+    # ollama binary check
+    chmod +x /bin/ollama
+
+%environment
+    export OLLAMA_HOST=0.0.0.0:11434
+
+%runscript
+    # Start ollama serve by default
+    exec /bin/ollama serve
+
+%startscript
+    /bin/ollama serve
+
+%labels
+    Author vsc37982 (robin k)
+    Version 1.0
+    Description Ollama LLM serving container for VSC (demo)
