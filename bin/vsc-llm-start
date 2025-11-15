@@ -1,8 +1,32 @@
 #!/bin/bash
+# check if a job is active
+if [ ! -z "$SLURM_JOB_ID" ]; then
+  echo "already in a SLURM job (ID: $SLURM_JOB_ID)"
+  echo "run 'vsc-llm-chat' to start chat"
+  exit 0
+fi
 
-ACCOUNT=${1:-lp_augment}
+# Get account from argument or try to detect
+ACCOUNT=${1}
 
-echo "requesting interactive partition..."
+if [ -z "$ACCOUNT" ]; then
+  echo "Checking available credit accounts..."
+  ACCOUNTS=$(sam-balance 2>/dev/null | grep -v "^ID" | grep -v "^===" | awk
+'{print $2}')
+  ACCOUNT=$(echo "$ACCOUNTS" | head -1)
+
+  if [ -z "$ACCOUNT" ]; then
+      echo "no credit account found!"
+      echo "please use: vsc-llm-start <account_name>, e.g., lp_augment"
+      exit 1
+  fi
+  echo "using account: $ACCOUNT"
+fi
+
+echo ""
+echo "requesting interactive GPU session..."
+echo ""
+
 srun --account=${ACCOUNT} \
    --cluster=wice \
    --partition=interactive \
@@ -10,14 +34,44 @@ srun --account=${ACCOUNT} \
    --cpus-per-task=4 \
    --mem=16G \
    --time=4:00:00 \
-   --pty bash -c "
-export VSC_LLM_ROOT=\${VSC_SCRATCH}/vsc-llm
+   --pty bash -c '
+# auto-detect VSC paths in job
+if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
+  VSC_GROUP="${BASH_REMATCH[1]}"
+  VSC_USER="vsc${BASH_REMATCH[2]}"
+  export VSC_HOME="/user/leuven/${VSC_GROUP}/${VSC_USER}"
+  export VSC_DATA="/data/leuven/${VSC_GROUP}/${VSC_USER}"
+  export VSC_SCRATCH="/scratch/leuven/${VSC_GROUP}/${VSC_USER}"
+fi
+
+export VSC_LLM_ROOT=${VSC_SCRATCH}/vsc-llm
+export APPTAINER_CACHEDIR=${VSC_LLM_ROOT}/cache
+export APPTAINER_TMPDIR=${VSC_LLM_ROOT}/tmp
+export PATH=${VSC_DATA}/vsc-llm/bin:${PATH}
+
 mkdir -p /tmp/ollama_models
+
+echo "Starting Ollama server..."
 apptainer run --nv \
 --bind /tmp/ollama_models:/models \
 --env OLLAMA_MODELS=/models \
-\${VSC_LLM_ROOT}/containers/ollama.sif &
+${VSC_LLM_ROOT}/containers/ollama.sif > /dev/null 2>&1 &
+
 sleep 3
-echo '=== Ollama server running ==='
-echo 'run: vsc-llm-chat'
+
+clear
+echo "  Ollama Server Running"
+echo "============================================"
+echo ""
+echo "started interactive GPU session, run nvidia-smi for partition details"
+echo ""
+echo "To chat with the LLM:"
+echo "  → vsc-llm-chat"
+echo ""
+echo "To stop and exit:"
+echo "  → vsc-llm-stop"
+echo "  → exit"
+echo ""
+
 bash
+'
