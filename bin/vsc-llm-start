@@ -11,8 +11,7 @@ fi
 ACCOUNT=${1}
 if [ -z "$ACCOUNT" ]; then
   echo "Checking available credit accounts..."
-  ACCOUNTS=$(sam-balance 2>/dev/null | grep -v "^ID" | grep -v "^===" | awk
-'{print $2}')
+  ACCOUNTS=$(sam-balance 2>/dev/null | grep -v "^ID" | grep -v "^===" | awk '{print $2}')
   ACCOUNT=$(echo "$ACCOUNTS" | head -1)
 
   if [ -z "$ACCOUNT" ]; then
@@ -45,33 +44,44 @@ if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
   export VSC_SCRATCH="/scratch/leuven/${VSC_GROUP}/${VSC_USER}"
 fi
 
-export VSC_LLM_ROOT=${VSC_SCRATCH}/vsc-llm
+export VSC_LLM_ROOT=${VSC_SCRATCH}/vsc-llm-data
 export APPTAINER_CACHEDIR=${VSC_LLM_ROOT}/cache
 export APPTAINER_TMPDIR=${VSC_LLM_ROOT}/tmp
 
-# Find bin directory
-if [ -d "${VSC_DATA}/vsc-llm/bin" ]; then
-  export PATH="${VSC_DATA}/vsc-llm/bin:${PATH}"
-elif [ -d "${VSC_DATA}/vsc-llm-demos/bin" ]; then
-  export PATH="${VSC_DATA}/vsc-llm-demos/bin:${PATH}"
+# Load repo path from config
+if [ -f "${VSC_LLM_ROOT}/config/repo_path" ]; then
+  VSC_LLM_REPO=$(cat "${VSC_LLM_ROOT}/config/repo_path")
+  export PATH="${VSC_LLM_REPO}/bin:${PATH}"
 fi
 
 mkdir -p /tmp/ollama_models
 
 echo "Starting Ollama server..."
-apptainer run --nv \
+
+# Start Ollama in background with nohup (keeps it alive)
+nohup apptainer run --nv \
 --bind /tmp/ollama_models:/models \
 --env OLLAMA_MODELS=/models \
-${VSC_LLM_ROOT}/containers/ollama.sif > /dev/null 2>&1 &
+${VSC_LLM_ROOT}/containers/ollama.sif > /tmp/ollama.log 2>&1 &
 
-sleep 3
+# Wait for server to be ready
+sleep 5
+
+# Check if server is responding
+if apptainer exec --nv \
+--bind /tmp/ollama_models:/models \
+--env OLLAMA_MODELS=/models \
+${VSC_LLM_ROOT}/containers/ollama.sif ollama list > /dev/null 2>&1; then
+  echo "✓ Ollama server is ready!"
+else
+  echo "⚠️  Ollama server started but may still be initializing..."
+  echo "   If chat fails, wait a moment and try again."
+fi
 
 clear
 echo "============================================"
-echo "  ✓ Ollama Server Running"
+echo "  ✓ GPU Session Active"
 echo "============================================"
-echo ""
-echo "You are now in an interactive GPU session!"
 echo ""
 echo "To chat with the LLM:"
 echo "  → vsc-llm-chat"
@@ -80,6 +90,7 @@ echo "To stop and exit:"
 echo "  → vsc-llm-stop"
 echo "  → exit"
 echo ""
+echo "Ollama logs: /tmp/ollama.log"
 echo "============================================"
 echo ""
 

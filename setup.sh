@@ -36,6 +36,12 @@ echo "✓ Using VSC_LLM_ROOT: ${VSC_LLM_ROOT}"
 mkdir -p ${VSC_LLM_ROOT}/{containers,models,cache,tmp,config}
 echo "✓ Created directory structure"
 
+# IMPORTANT: Set Apptainer cache to scratch BEFORE building
+export APPTAINER_CACHEDIR=${VSC_LLM_ROOT}/cache
+export APPTAINER_TMPDIR=${VSC_LLM_ROOT}/tmp
+echo "✓ Set Apptainer cache to scratch (not HOME)"
+
+
 # Save repo location to config file
 echo "${REPO_DIR}" > ${VSC_LLM_ROOT}/config/repo_path
 echo "✓ Saved repository path"
