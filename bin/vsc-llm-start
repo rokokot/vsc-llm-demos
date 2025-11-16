@@ -1,30 +1,29 @@
 #!/bin/bash
 
-# Check if we're already in a job
+# check if a job is active
 if [ ! -z "$SLURM_JOB_ID" ]; then
-  echo "⚠️  You're already in a SLURM job (ID: $SLURM_JOB_ID)"
-  echo "Run 'vsc-llm-chat' to start chatting!"
+  echo "SLURM job active (ID: $SLURM_JOB_ID)"
+  echo "run 'vsc-llm-chat' to start chat"
   exit 0
 fi
 
-# Get account
+# autodetec account (broken)
 ACCOUNT=${1}
 if [ -z "$ACCOUNT" ]; then
-  echo "Checking available credit accounts..."
+  echo "checking available credit accounts..."
   ACCOUNTS=$(sam-balance 2>/dev/null | grep -v "^ID" | grep -v "^===" | awk '{print $2}')
   ACCOUNT=$(echo "$ACCOUNTS" | head -1)
 
   if [ -z "$ACCOUNT" ]; then
-      echo "❌ No credit account found!"
-      echo "Please specify: vsc-llm-start <account_name>"
+      echo "no credit account found"
+      echo "specify: vsc-llm-start <account_name>"
       exit 1
   fi
-  echo "✓ Using account: $ACCOUNT"
+  echo "using account: $ACCOUNT"
 fi
 
 echo ""
-echo "Requesting interactive GPU session..."
-echo "(This may take a few moments)"
+echo "requesting interactive GPU session"
 echo ""
 
 srun --account=${ACCOUNT} \
@@ -35,7 +34,7 @@ srun --account=${ACCOUNT} \
    --mem=16G \
    --time=4:00:00 \
    --pty bash -c '
-# Auto-detect VSC paths in job
+# auto-detect VSC paths in job
 if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
   VSC_GROUP="${BASH_REMATCH[1]}"
   VSC_USER="vsc${BASH_REMATCH[2]}"
@@ -56,42 +55,44 @@ fi
 
 mkdir -p /tmp/ollama_models
 
-echo "Starting Ollama server..."
+echo "starting Ollama server..."
 
-# Start Ollama in background with nohup (keeps it alive)
+# start Ollama in background with nohup (keeps it alive until server stops)
 nohup apptainer run --nv \
 --bind /tmp/ollama_models:/models \
 --env OLLAMA_MODELS=/models \
 ${VSC_LLM_ROOT}/containers/ollama.sif > /tmp/ollama.log 2>&1 &
 
-# Wait for server to be ready
 sleep 5
 
-# Check if server is responding
+# check server health
 if apptainer exec --nv \
 --bind /tmp/ollama_models:/models \
 --env OLLAMA_MODELS=/models \
 ${VSC_LLM_ROOT}/containers/ollama.sif ollama list > /dev/null 2>&1; then
-  echo "✓ Ollama server is ready!"
+  echo "ollama server ready"
 else
-  echo "⚠️  Ollama server started but may still be initializing..."
-  echo "   If chat fails, wait a moment and try again."
+  echo "Ollama server started but may still be loading"
+  echo "If chat fails to load, wait a moment and try again"
 fi
 
 clear
-echo "============================================"
-echo "  ✓ GPU Session Active"
-echo "============================================"
+echo " Interactive session active "
+echo "================================="
 echo ""
-echo "To chat with the LLM:"
-echo "  → vsc-llm-chat"
+echo "to check gpu info:"
+echo "  run: nvidia-smi"
 echo ""
-echo "To stop and exit:"
-echo "  → vsc-llm-stop"
-echo "  → exit"
+echo "to start the chat:"
+echo "  run: vsc-llm-chat"
 echo ""
-echo "Ollama logs: /tmp/ollama.log"
-echo "============================================"
+echo "to stop and exit:"
+
+echo "  run: vsc-llm-stop"
+echo "  run: exit"
+echo ""
+echo "ollama logs: /tmp/ollama.log"
+echo "=============================="
 echo ""
 
 bash
