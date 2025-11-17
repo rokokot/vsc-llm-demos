@@ -1,19 +1,10 @@
-## VSC demo - Llama 3.2-3B CLI chat
+## Llama 3.2-3B CLI chat
 
-Chat interface for the VSC HPC cluster using Ollama and Llama 3.2-3B.
-
-Some warnings about using the steps below:
-    1. This setup relies on the VSC interactive sessions. One benefit of this is that it does not use any credits, but we cannot change the GPU or memory settings as precisely as we can in regular slurm jobs.
-    2. You need a vsc account (vscXXXXX), preferably with some credits (the default project account requires access control, so let one of the augment admins add you to the group)
-    3. 
-    
-### Login
+#### Login
 
 ```bash
 
 ssh vscXXXXX@login.hpc.kuleuven.be
-
-### Basic navigation
 
 ```bash
 
@@ -30,7 +21,7 @@ srun ...
 
 ```bash
 cd $VSC_DATA
-git clone <your-repo-url>
+git clone <repo-url>
 cd vsc-llm-demos
 ./setup.sh
 source ~/.bashrc
