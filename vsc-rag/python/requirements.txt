@@ -1,0 +1,14 @@
+# LlamaIndex core and integrations
+llama-index-core>=0.10.0
+llama-index-llms-ollama>=0.1.0
+llama-index-embeddings-huggingface>=0.1.0
+
+# Embeddings and NLP
+sentence-transformers>=2.2.0
+
+# Document processing
+pypdf>=3.0.0
+
+# Required dependencies
+torch>=2.0.0
+transformers>=4.30.0

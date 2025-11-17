@@ -1,0 +1,8 @@
+Bootstrap: docker
+From: ollama/ollama:latest
+
+%post
+    chmod +x /bin/ollama
+
+%environment
+    export OLLAMA_HOST=0.0.0.0:11434

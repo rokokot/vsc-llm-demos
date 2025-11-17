@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Auto-detect VSC environment variables if not set
+if [[ -z "$VSC_HOME" || -z "$VSC_DATA" || -z "$VSC_SCRATCH" ]]; then
+    if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
+        SITE="${BASH_REMATCH[1]}"
+        USERID="${BASH_REMATCH[2]}"
+        export VSC_HOME="/user/leuven/$SITE/vsc$USERID"
+        export VSC_DATA="/data/leuven/$SITE/vsc$USERID"
+        export VSC_SCRATCH="/scratch/leuven/$SITE/vsc$USERID"
+    fi
+fi
+
+# Set VSC_RAG_ROOT if not already set
+if [[ -z "$VSC_RAG_ROOT" ]]; then
+    export VSC_RAG_ROOT="${VSC_SCRATCH}/vsc-rag-data"
+fi
+
+# Get repo path from config
+REPO_PATH="${VSC_RAG_ROOT}"
+if [ -f "${VSC_RAG_ROOT}/config/repo_path" ]; then
+    REPO_PATH=$(cat "${VSC_RAG_ROOT}/config/repo_path")
+fi
+
+PYTHON_BIN="${VSC_RAG_ROOT}/venv/bin/python"
+RAG_SCRIPT="${REPO_PATH}/python/rag_utils.py"
+
+# Check if Python environment exists
+if [ ! -f "$PYTHON_BIN" ]; then
+    echo "Error: Python environment not found"
+    echo "Please run setup.sh first"
+    exit 1
+fi
+
+# Check if index exists
+if [ ! -d "${VSC_RAG_ROOT}/index" ]; then
+    echo "Error: No index found"
+    echo "Please run: vsc-rag-index <path-to-documents>"
+    exit 1
+fi
+
+# Run chat interface
+$PYTHON_BIN "$RAG_SCRIPT" chat

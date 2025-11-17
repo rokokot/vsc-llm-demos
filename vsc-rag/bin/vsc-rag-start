@@ -1,0 +1,87 @@
+#!/bin/bash
+set -e
+
+# Auto-detect VSC environment variables if not set
+if [[ -z "$VSC_HOME" || -z "$VSC_DATA" || -z "$VSC_SCRATCH" ]]; then
+    if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
+        SITE="${BASH_REMATCH[1]}"
+        USERID="${BASH_REMATCH[2]}"
+        export VSC_HOME="/user/leuven/$SITE/vsc$USERID"
+        export VSC_DATA="/data/leuven/$SITE/vsc$USERID"
+        export VSC_SCRATCH="/scratch/leuven/$SITE/vsc$USERID"
+    fi
+fi
+
+# Set VSC_RAG_ROOT if not already set
+if [[ -z "$VSC_RAG_ROOT" ]]; then
+    export VSC_RAG_ROOT="${VSC_SCRATCH}/vsc-rag-data"
+fi
+
+CONTAINER="${VSC_RAG_ROOT}/containers/ollama.sif"
+MODEL_DIR="/tmp/ollama_models_rag"
+MODEL="llama3.2-3b-rag"
+
+# Check if container exists
+if [ ! -f "$CONTAINER" ]; then
+    echo "Error: Container not found at $CONTAINER"
+    echo "Please run setup.sh first"
+    exit 1
+fi
+
+# Create model directory if it doesn't exist
+mkdir -p "$MODEL_DIR"
+
+# Check if Ollama is already running
+if pgrep -f "ollama serve" > /dev/null; then
+    echo "⚠ Ollama server is already running"
+    exit 0
+fi
+
+# Start Ollama server in background with logging
+
+mkdir -p ${MODEL_DIR}
+mkdir -p /tmp/local_scratch
+
+echo "Starting Ollama server for RAG..."
+nohup apptainer run --nv \
+    --env CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES}" \
+    --env OLLAMA_CONTEXT_LENGTH=2048 \
+    --bind ${MODEL_DIR}:/models \
+    --bind /tmp/local_scratch:/local_scratch \
+    --env OLLAMA_MODELS=/models \
+    ${CONTAINER} > /tmp/ollama_rag.log 2>&1 &
+
+# Wait for server to start
+sleep 5
+
+# Health check
+if apptainer exec --nv \
+    --bind ${MODEL_DIR}:/models \
+    --env OLLAMA_MODELS=/models \
+    ${CONTAINER} ollama list > /dev/null 2>&1; then
+    echo "✓ Ollama server is ready!"
+else
+    echo "✗ Failed to start Ollama server"
+    echo "Check logs: /tmp/ollama_rag.log"
+    exit 1
+fi
+
+# Pull model if not already present
+if ! apptainer exec --nv \
+    --bind ${MODEL_DIR}:/models \
+    --env OLLAMA_MODELS=/models \
+    ${CONTAINER} ollama list | grep -q "$MODEL"; then
+    echo "Downloading $MODEL model (first time only, ~2GB)..."
+    apptainer exec --nv \
+        --bind ${MODEL_DIR}:/models \
+        --env OLLAMA_MODELS=/models \
+        ${CONTAINER} ollama pull "$MODEL"
+fi
+
+echo ""
+echo "════════════════════════════════════════"
+echo "  VSC-RAG Server Running"
+echo "════════════════════════════════════════"
+echo "  Model: $MODEL"
+echo "  Next: vsc-rag-index <path-to-docs>"
+echo "════════════════════════════════════════"
