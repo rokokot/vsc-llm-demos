@@ -64,9 +64,11 @@ if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
   export APPTAINER_TMPDIR=${VSC_LLM_ROOT}/tmp
 
   # add repo bin to PATH if repo path is saved
-  if [ -f "${VSC_LLM_ROOT}/config/repo_path" ]; then
-      VSC_LLM_REPO=$(cat "${VSC_LLM_ROOT}/config/repo_path")
-      export PATH="${VSC_LLM_REPO}/bin:${PATH}"
+  if [ -f "${VSC_LLM_ROOT}/config/repo_path" ] 2>/dev/null; then
+      VSC_LLM_REPO=$(cat "${VSC_LLM_ROOT}/config/repo_path" 2>/dev/null)
+      if [ -n "$VSC_LLM_REPO" ] && [ -d "$VSC_LLM_REPO/bin" ]; then
+          export PATH="${VSC_LLM_REPO}/bin:${PATH}"
+      fi
   fi
 fi
 BASHRC

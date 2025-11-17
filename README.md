@@ -29,9 +29,13 @@ cd vsc-rag && bash setup.sh
 
 **MIG (Multi-Instance GPU)** on interactive partition:
 - **VRAM**: ~10GB per MIG slice
-- **Context**: 2048 tokens (small context for quick connection)
+- **Context**: 2048 tokens (reduced from 131K default)
+- **Custom model**: `llama3.2-3b-rag` automatically created on first run
 
-Default 131K context would require 14GB VRAM (exceeds 10GB limit).
+The `vsc-rag-start` script automatically:
+1. Downloads base model `llama3.2:3b` (~2GB)
+2. Creates custom model with 2048 token context
+3. This prevents out-of-memory errors on MIG GPUs
 
 ### GPU Not Detected
 
