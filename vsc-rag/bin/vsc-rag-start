@@ -66,16 +66,39 @@ else
     exit 1
 fi
 
-# Pull model if not already present
+# Check if custom model exists, create if not
 if ! apptainer exec --nv \
     --bind ${MODEL_DIR}:/models \
     --env OLLAMA_MODELS=/models \
     ${CONTAINER} ollama list | grep -q "$MODEL"; then
-    echo "Downloading $MODEL model (first time only, ~2GB)..."
+
+    echo "Creating custom $MODEL model (first time only)..."
+
+    # First, pull base model if needed
+    if ! apptainer exec --nv \
+        --bind ${MODEL_DIR}:/models \
+        --env OLLAMA_MODELS=/models \
+        ${CONTAINER} ollama list | grep -q "llama3.2:3b"; then
+        echo "Downloading base model llama3.2:3b (~2GB)..."
+        apptainer exec --nv \
+            --bind ${MODEL_DIR}:/models \
+            --env OLLAMA_MODELS=/models \
+            ${CONTAINER} ollama pull llama3.2:3b
+    fi
+
+    # Create Modelfile with reduced context
+    cat > /tmp/llama3.2-3b-rag.modelfile <<'EOF'
+FROM llama3.2:3b
+PARAMETER num_ctx 2048
+EOF
+
+    echo "Building custom model with 2048 token context..."
     apptainer exec --nv \
         --bind ${MODEL_DIR}:/models \
         --env OLLAMA_MODELS=/models \
-        ${CONTAINER} ollama pull "$MODEL"
+        ${CONTAINER} ollama create "$MODEL" -f /tmp/llama3.2-3b-rag.modelfile
+
+    echo "✓ Custom model created successfully!"
 fi
 
 echo ""

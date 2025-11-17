@@ -69,8 +69,26 @@ echo "════════════════════════�
 echo ""
 echo "Add to your ~/.bashrc:"
 echo ""
-echo "  export VSC_RAG_ROOT=\"${VSC_RAG_ROOT}\""
-echo "  export PATH=\"\${VSC_RAG_ROOT}/\$(cat \${VSC_RAG_ROOT}/config/repo_path)/bin:\$PATH\""
+cat << 'BASHRC_EXAMPLE'
+# VSC-RAG Configuration
+if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
+  SITE="${BASH_REMATCH[1]}"
+  USERID="${BASH_REMATCH[2]}"
+  export VSC_SCRATCH="/scratch/leuven/$SITE/vsc$USERID"
+  export VSC_RAG_ROOT="${VSC_SCRATCH}/vsc-rag-data"
+
+  # Add repo bin to PATH if repo path is saved
+  if [ -f "${VSC_RAG_ROOT}/config/repo_path" ] 2>/dev/null; then
+      VSC_RAG_REPO=$(cat "${VSC_RAG_ROOT}/config/repo_path" 2>/dev/null)
+      if [ -n "$VSC_RAG_REPO" ] && [ -d "$VSC_RAG_REPO/bin" ]; then
+          export PATH="${VSC_RAG_REPO}/bin:${PATH}"
+      fi
+  fi
+fi
+
+# Load Python module for RAG
+module load Python/3.11.3-GCCcore-12.3.0
+BASHRC_EXAMPLE
 echo ""
 echo "Then run: source ~/.bashrc"
 echo ""

@@ -9,10 +9,25 @@ cd vsc-llm-demos/vsc-rag
 bash setup.sh
 ```
 
-Add to your `~/.bashrc` (replace with your paths):
+Add to your `~/.bashrc` (the setup script will show you the exact code):
 ```bash
-export VSC_RAG_ROOT="${VSC_SCRATCH}/vsc-rag-data"
-export PATH="${VSC_RAG_ROOT}/$(cat ${VSC_RAG_ROOT}/config/repo_path)/bin:$PATH"
+# VSC-RAG Configuration
+if [[ "$HOME" =~ /user/leuven/([0-9]{3})/vsc([0-9]{5}) ]]; then
+  SITE="${BASH_REMATCH[1]}"
+  USERID="${BASH_REMATCH[2]}"
+  export VSC_SCRATCH="/scratch/leuven/$SITE/vsc$USERID"
+  export VSC_RAG_ROOT="${VSC_SCRATCH}/vsc-rag-data"
+
+  # Add repo bin to PATH if repo path is saved
+  if [ -f "${VSC_RAG_ROOT}/config/repo_path" ] 2>/dev/null; then
+      VSC_RAG_REPO=$(cat "${VSC_RAG_ROOT}/config/repo_path" 2>/dev/null)
+      if [ -n "$VSC_RAG_REPO" ] && [ -d "$VSC_RAG_REPO/bin" ]; then
+          export PATH="${VSC_RAG_REPO}/bin:${PATH}"
+      fi
+  fi
+fi
+
+# Load Python module for RAG
 module load Python/3.11.3-GCCcore-12.3.0
 ```
 
@@ -26,14 +41,19 @@ srun --account=CREDIT_ACCOUNT --cluster=wice --partition=interactive \
      --time=4:00:00 --pty bash -l
 ```
 
-### 3. index 
+### 3. Start server and index documents
 
 ```bash
-vsc-rag-start
+vsc-rag-start  # Downloads model (~2GB) on first run
 vsc-rag-index $VSC_DATA/your-documents
 ```
 
-**Demo**:  included Pascal collected works:
+**First time:** `vsc-rag-start` will:
+- Download base model `llama3.2:3b` (~2GB, one-time)
+- Create custom model with 2048 token context (for MIG GPU compatibility)
+- This takes ~5 minutes on first run
+
+**Demo**: Try the included Pascal texts:
 ```bash
 vsc-rag-index $VSC_DATA/vsc-llm-demos/vsc-rag/pascal-texts
 ```
