@@ -6,6 +6,12 @@ Chat and RAG samples for using ollama on the vsc cluster. Default using llama3.2
 #### [vsc-llm](./vsc-llm) - simple chat
 #### [vsc-rag](./vsc-rag) - document QA
 - **resources**: Interactive GPU (free tier, MIG slice)
+  
+#### From your local machine
+   16 +  ssh vscXXXXX@login.hpc.kuleuven.be
+   17 +  
+   18 +  # Replace XXXXX with your VSC user number
+   19 +  # Example: ssh vscXXXXX@login.hpc.kuleuven.be
 
 ```bash
 # clone repository
