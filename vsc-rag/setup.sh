@@ -95,7 +95,7 @@ echo ""
 echo "Then run: source ~/.bashrc"
 echo ""
 echo "Next steps:"
-echo "  1. Request GPU: srun --account=CREDIT_ACCOUNT --cluster=wice --partition=interactive --nodes=1 --gpus-per-node=1 --cpus-per-task=4 --mem=16G --time=4:00:00 --pty bash -l
+echo "  1. Request GPU: srun --account=CREDIT_ACCOUNT --cluster=wice --partition=interactive --nodes=1 --gpus-per-node=1 --cpus-per-task=4 --mem=16G --time=4:00:00 --pty bash -l"
 echo "  2. Start server: vsc-rag-start"
 echo "  3. Index docs:   vsc-rag-index \$VSC_DATA/my-documents"
 echo "  4. Chat:         vsc-rag-chat"
