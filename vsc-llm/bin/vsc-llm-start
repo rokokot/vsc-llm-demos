@@ -53,13 +53,17 @@ if [ -f "${VSC_LLM_ROOT}/config/repo_path" ]; then
   export PATH="${VSC_LLM_REPO}/bin:${PATH}"
 fi
 
-mkdir -p /tmp/ollama_models
+# Use persistent storage in scratch (not /tmp which is per-session)
+MODEL_DIR="${VSC_LLM_ROOT}/models"
+mkdir -p ${MODEL_DIR}
+mkdir -p /tmp/local_scratch  # Needed for GPU detection
 
 echo "starting Ollama server..."
 
 # start Ollama in background with nohup (keeps it alive until server stops)
 nohup apptainer run --nv \
---bind /tmp/ollama_models:/models \
+--bind ${MODEL_DIR}:/models \
+--bind /tmp/local_scratch:/local_scratch \
 --env OLLAMA_MODELS=/models \
 ${VSC_LLM_ROOT}/containers/ollama.sif > /tmp/ollama.log 2>&1 &
 
@@ -67,7 +71,7 @@ sleep 5
 
 # check server health
 if apptainer exec --nv \
---bind /tmp/ollama_models:/models \
+--bind ${MODEL_DIR}:/models \
 --env OLLAMA_MODELS=/models \
 ${VSC_LLM_ROOT}/containers/ollama.sif ollama list > /dev/null 2>&1; then
   echo "ollama server ready"

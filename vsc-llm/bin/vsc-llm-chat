@@ -9,15 +9,16 @@ GREEN = '\033[92m'
 RESET = '\033[0m'
 BOLD = '\033[1m'
 
-MODEL = "llama3.2:3b"   # this can be changed to other models 
+MODEL = "llama3.2:3b"   # this can be changed to other models
 VSC_LLM_ROOT = os.environ.get('VSC_LLM_ROOT', f"{os.environ['VSC_SCRATCH']}/vsc-llm-data")
 CONTAINER = f"{VSC_LLM_ROOT}/containers/ollama.sif"
+MODEL_DIR = f"{VSC_LLM_ROOT}/models"
 
 # pull model if needed
 print(f"{BLUE} checking model {MODEL}...{RESET}", end='', flush=True)
-subprocess.run(["apptainer", "exec", "--nv","--bind","/tmp/ollama_models:/models","--env","OLLAMA_MODELS=/models", CONTAINER, "ollama", "pull", MODEL
+subprocess.run(["apptainer", "exec", "--nv","--bind",f"{MODEL_DIR}:/models","--env","OLLAMA_MODELS=/models", CONTAINER, "ollama", "pull", MODEL
 ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-print(f" {GREEN}{RESET}")
+print(f" {GREEN}✓{RESET}")
 
 # clear screen and show header
 print("\033[2J\033[H")  # clear screen
@@ -32,7 +33,7 @@ print()
 # Note: stderr must stay connected for interactive mode to work
 subprocess.call([
   "apptainer", "exec", "--nv",
-  "--bind", "/tmp/ollama_models:/models",
+  "--bind", f"{MODEL_DIR}:/models",
   "--env", "OLLAMA_MODELS=/models",
   CONTAINER, "ollama", "run", MODEL
 ])
