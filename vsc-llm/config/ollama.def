@@ -16,6 +16,6 @@ From: ollama/ollama:latest
     /bin/ollama serve
 
 %labels
-    Author vsc37982 (robin k)
+    Author Robin K
     Version 1.0
     Description Ollama LLM serving container for VSC (demo)
