@@ -1,31 +1,30 @@
 #!/usr/bin/env python3
-"""
-RAG utility for VSC - Document indexing and question answering
+
+""" RAG utility for VSC -  indexing and QA
+
+
 """
 
 import os
 import sys
 from pathlib import Path
 
-def setup_environment():
-    """Setup VSC environment variables and paths"""
-    # Auto-detect VSC paths if not set
+def setup_environment(): # environment variables and paths
     home = os.environ.get('HOME', '')
     if not os.environ.get('VSC_SCRATCH'):
-        # Extract from HOME path like /user/leuven/379/vsc37982
+
         parts = home.split('/')
         if len(parts) >= 5 and parts[1] == 'user' and parts[2] == 'leuven':
             site = parts[3]
             userid = parts[4]
             os.environ['VSC_SCRATCH'] = f'/scratch/leuven/{site}/{userid}'
 
-    vsc_rag_root = os.environ.get('VSC_RAG_ROOT',
-                                   os.path.join(os.environ.get('VSC_SCRATCH', ''), 'vsc-rag-data'))
+    vsc_rag_root = os.environ.get('VSC_RAG_ROOT', os.path.join(os.environ.get('VSC_SCRATCH', ''), 'vsc-rag-data'))
 
     return vsc_rag_root
 
 def build_index(doc_path: str):
-    """Build vector index from documents"""
+    """bild vector index """
     from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
     from llama_index.llms.ollama import Ollama
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -34,40 +33,44 @@ def build_index(doc_path: str):
     index_dir = os.path.join(vsc_rag_root, "index")
 
     print("Loading documents...")
-    # Load all txt and pdf files
+    # Load all txt and files; extend as necessary
     reader = SimpleDirectoryReader(
         input_dir=doc_path,
         required_exts=[".txt", ".pdf"],
+
         recursive=True
     )
-    documents = reader.load_data()
-    print(f"✓ Loaded {len(documents)} documents")
 
-    print("\nConfiguring RAG system...")
-    # Configure LLM (Ollama running locally)
+    documents = reader.load_data()
+    print(f"indexed {len(documents)} documents")
+
+    print("setup RAG -> ollama + embeddings ")
+    #  LLM (Ollama running locally)
     Settings.llm = Ollama(
         model="llama3.2:3b",
         base_url="http://localhost:11434",
         request_timeout=120.0
     )
 
-    # Configure embeddings (local HuggingFace model)
+    #  embeddings (local HuggingFace model)
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    print("Building vector index (this may take a few minutes)...")
+    print("getting vector index (this will take a few minutes)...")
     index = VectorStoreIndex.from_documents(documents, show_progress=True)
 
-    # Persist index to disk
+    #  index to disk
+
     os.makedirs(index_dir, exist_ok=True)
+
     index.storage_context.persist(persist_dir=index_dir)
-    print(f"\n✓ Index saved to {index_dir}")
+    print(f"index saved to {index_dir}")
 
     return index
 
 def load_index():
-    """Load existing index from disk"""
+    """ load existing index from disk"""
     from llama_index.core import load_index_from_storage, StorageContext, Settings
     from llama_index.llms.ollama import Ollama
     from llama_index.embeddings.huggingface import HuggingFaceEmbedding
@@ -76,12 +79,14 @@ def load_index():
     index_dir = os.path.join(vsc_rag_root, "index")
 
     # Configure LLM and embeddings (must match indexing settings)
+
     Settings.llm = Ollama(
         model="llama3.2-3b-rag",
         base_url="http://localhost:11434",
         request_timeout=120.0,
 	additional_kwargs={"num_ctx": 2048}
     )
+
 
     Settings.embed_model = HuggingFaceEmbedding(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
@@ -94,13 +99,13 @@ def load_index():
     return index
 
 def chat_loop():
-    """Interactive chat with RAG"""
-    print("Loading index...")
+    """ chat with documents"""
+    print("loading index...")
     index = load_index()
     query_engine = index.as_query_engine(similarity_top_k=3)
 
     print("\n" + "="*60)
-    print("  VSC-RAG Chat - Ask questions about your documents")
+    print("  QA interface")
     print("="*60)
     print("  Type 'exit' or 'quit' to end the session")
     print("="*60 + "\n")
@@ -132,21 +137,21 @@ def chat_loop():
 def main():
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  rag_utils.py index <doc-path>  - Build index from documents")
-        print("  rag_utils.py chat              - Start RAG chat interface")
+        print("  rag_utils.py index <doc-path>  -  index from documents")
+        print("  rag_utils.py chat              - start RAG chat ")
         sys.exit(1)
 
     command = sys.argv[1]
 
     if command == "index":
         if len(sys.argv) < 3:
-            print("Error: Please provide document path")
+            print("error: Please provide document path")
             print("Usage: rag_utils.py index <doc-path>")
             sys.exit(1)
 
         doc_path = sys.argv[2]
         if not os.path.isdir(doc_path):
-            print(f"Error: Directory not found: {doc_path}")
+            print(f"error: Directory not found: {doc_path}")
             sys.exit(1)
 
         build_index(doc_path)
@@ -155,7 +160,7 @@ def main():
         chat_loop()
 
     else:
-        print(f"Unknown command: {command}")
+        print(f"unknown command: {command}")
         sys.exit(1)
 
 if __name__ == "__main__":
