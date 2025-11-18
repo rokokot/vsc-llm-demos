@@ -1,3 +1,35 @@
+# Python
 *.pyc
 __pycache__/
+*.pyo
+*.egg-info/
+.venv/
+venv/
+*.egg
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Secrets and credentials
+*.key
+*.pem
+*.env
+.env.*
+credentials.json
+config.json
+
+# VSC-specific runtime data (not in repo)
+*.sif
+*.log
+index/
+models/
+cache/
+tmp/
