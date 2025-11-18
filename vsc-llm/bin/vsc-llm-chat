@@ -28,12 +28,13 @@ print(f"  run {BLUE}/bye{RESET} to exit")
 print(f"{BOLD}{'=' * 60}{RESET}")
 print()
 
-# suppress stderr (has the [GIN] logs)
+# Run interactive chat
+# Note: stderr must stay connected for interactive mode to work
 subprocess.call([
   "apptainer", "exec", "--nv",
   "--bind", "/tmp/ollama_models:/models",
   "--env", "OLLAMA_MODELS=/models",
   CONTAINER, "ollama", "run", MODEL
-], stderr=subprocess.DEVNULL)
+])
 
 print(f"\n{GREEN}bye!{RESET}")
